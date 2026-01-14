@@ -1,5 +1,6 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 const app = express();
 app.use(express.json({ limit: "20mb" }));
@@ -28,29 +29,20 @@ app.post("/render-pdf", async (req, res) => {
       return res.status(400).json({ error: "Invalid HTML payload" });
     }
 
-    // Debug info in case Render crashes
-    const htmlSize = Buffer.byteLength(html, "utf8");
-
+    // ✅ Launch Chromium compatible with restricted environments
     browser = await puppeteer.launch({
-      headless: "new",
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--no-zygote",
-        "--single-process",
-        "--font-render-hinting=medium"
-      ]
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless
     });
 
     const page = await browser.newPage();
 
-    // Prevent external network calls hanging forever
+    // No external asset fetching → stable + fast
     await page.setRequestInterception(true);
     page.on("request", (request) => {
       const url = request.url();
-      // Allow only inline content
       if (url.startsWith("data:") || url.startsWith("about:")) {
         request.continue();
       } else {
@@ -86,9 +78,7 @@ app.post("/render-pdf", async (req, res) => {
 
     return res.status(500).json({
       error: "PDF render failed",
-      details: err && err.message ? err.message : String(err),
-      hint:
-        "This usually means Chromium failed to launch on Render free tier or HTML was too large. Check details."
+      details: err && err.message ? err.message : String(err)
     });
   }
 });
