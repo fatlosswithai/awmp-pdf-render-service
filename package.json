@@ -1,0 +1,14 @@
+{
+  "name": "awmp-pdf-render-service",
+  "version": "1.0.0",
+  "description": "AWMP Chrome PDF renderer (HTML -> PDF) with Puppeteer",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "puppeteer": "^23.5.3"
+  }
+}
